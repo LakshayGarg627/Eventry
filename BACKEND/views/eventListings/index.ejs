@@ -30,10 +30,18 @@
                 <option value="amount_asc">Amount: Low → High</option>
             </select>
         </div>
+
+        <div class="sortByCategory">
+            
+        </div>
         
-        <div class="row g-4">
+        <div id="list" class="row g-4">
             <% for(let event of allEvents.slice().reverse()){ %>
-                <div class="col-lg-4 col-md-6 col-sm-12">
+                <div class="col-lg-4 col-md-6 col-sm-12" 
+                     data-title="<%= event.title.toLowerCase() %>"
+                     data-category="<%= event.eventCategory.toLowerCase() %>"
+                     data-date="<%= event.date %>"
+                     data-amount="<%= event.entryFee %>">
                     <div class="event-card">
                         <div class="event-image-wrapper">
                             <img src="<%= event.image%>" alt="<%= event.title %>" class="event-image">
@@ -91,6 +99,18 @@
                 </div>
             <% } %>
         </div>
+
+        <div id="noResults" class="no-results d-none">
+            <div class="no-results-content">
+                <i class="fas fa-search no-results-icon"></i>
+                <h5 class="no-results-title">No matching events found</h5>
+                <p class="no-results-text">Try a different search term or explore other categories</p>
+                <a href="/events/new" class="btn btn-primary no-results-btn">
+                    <i class="fas fa-plus"></i>
+                    Add New Event
+                </a>
+            </div>
+        </div>
         
         <% if (allEvents.length === 0) { %>
             <div class="empty-state">
@@ -109,18 +129,65 @@
 </div>
 
 <script>
-function toggleFavorite(btn) {
-    const icon = btn.querySelector('i');
-    if (icon.classList.contains('far')) {
-        icon.classList.remove('far');
-        icon.classList.add('fas');
-        btn.style.color = '#e74c3c';
-    } else {
-        icon.classList.remove('fas');
-        icon.classList.add('far');
-        btn.style.color = '';
+    function toggleFavorite(btn) {
+        const icon = btn.querySelector('i');
+        if (icon.classList.contains('far')) {
+            icon.classList.remove('far');
+            icon.classList.add('fas');
+            btn.style.color = '#e74c3c';
+        } else {
+            icon.classList.remove('fas');
+            icon.classList.add('far');
+            btn.style.color = '';
+        }
     }
-}
+
+    const search=document.getElementById('search');
+    const sort=document.getElementById('sort');
+    const list=Array.from(document.querySelectorAll('#list > div'));
+    const noResults=document.getElementById('noResults');
+
+    function searchAndSort(){
+        const q=search.value.trim().toLowerCase();
+        const sortBy=sort.value;
+        let shown=0;
+        const sorted=list.slice().sort((a,b)=>{
+            const ad=a.dataset.date;
+            const bd=b.dataset.date;
+            const aa=parseFloat(a.dataset.amount) || 0;
+            const ba=parseFloat(b.dataset.amount) || 0;
+            if(sortBy=='date_desc'){
+                return new Date(bd) - new Date(ad);
+            }
+            if(sortBy=='date_asc'){
+                return new Date(ad) - new Date(bd);
+            }
+            if(sortBy=='amount_desc'){
+                return ba-aa;
+            }
+            if(sortBy=='amount_asc'){
+                return aa-ba;
+            }
+            return 0;
+        });
+        const container=document.getElementById('list');
+        sorted.forEach(node => container.appendChild(node));
+
+        // filter
+        sorted.forEach(node=>{
+            const title=(node.dataset.title || '');
+            const category=(node.dataset.category || '');
+            const match=!q || title.includes(q) || category.includes(q);
+            node.style.display=match?'':'none';
+            if(match)shown++;
+        });
+
+        noResults.classList.toggle('d-none',shown>0);
+
+    }
+    search.addEventListener('input',searchAndSort);
+    sort.addEventListener('change',searchAndSort);
+    
 </script>
 
 <style>
@@ -193,6 +260,99 @@ function toggleFavorite(btn) {
     border-color: #a855f7;
 }
 
+/* No Results Styling */
+.no-results {
+    display: none;
+    text-align: center;
+    padding: 4rem 2rem;
+    margin: 2rem 0;
+}
+
+.no-results-content {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+}
+
+.no-results-content::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #6c5ce7, #a855f7, #ec4899);
+    border-radius: 20px 20px 0 0;
+}
+
+.no-results-icon {
+    font-size: 3.5rem;
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    opacity: 0.6;
+    background: linear-gradient(135deg, #6c5ce7, #a855f7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.no-results-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #343a40;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+}
+
+.no-results-text {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+    font-weight: 400;
+}
+
+.no-results-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    background: linear-gradient(135deg, #6c5ce7 0%, #a855f7 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.no-results-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(108, 92, 231, 0.4);
+    background: linear-gradient(135deg, #5b4cdb 0%, #9333ea 100%);
+    color: white;
+    text-decoration: none;
+}
+
+.no-results-btn:active {
+    transform: translateY(0);
+}
+
+.no-results-btn i {
+    font-size: 0.9rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .filterSection {
@@ -205,6 +365,34 @@ function toggleFavorite(btn) {
     .filter-select {
         min-width: 100%;
         width: 100%;
+    }
+    
+    .no-results {
+        padding: 3rem 1rem;
+    }
+    
+    .no-results-content {
+        padding: 2rem;
+        border-radius: 16px;
+    }
+    
+    .no-results-icon {
+        font-size: 3rem;
+        margin-bottom: 1.25rem;
+    }
+    
+    .no-results-title {
+        font-size: 1.3rem;
+    }
+    
+    .no-results-text {
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .no-results-btn {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
     }
 }
 
@@ -223,6 +411,30 @@ function toggleFavorite(btn) {
     
     .filter-select {
         padding-right: 2.5rem;
+    }
+    
+    .no-results {
+        padding: 2rem 0.5rem;
+    }
+    
+    .no-results-content {
+        padding: 1.5rem;
+        border-radius: 12px;
+    }
+    
+    .no-results-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .no-results-title {
+        font-size: 1.2rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .no-results-btn {
+        width: 100%;
+        justify-content: center;
     }
 }
 
