@@ -7,14 +7,11 @@ const Event=require("../models/events.js");
 
 const {isLoggedIn,isOwner,validateEvent}=require("../middleware.js");
 
-
-
 router.get("/",wrapAsync(async(req,res)=>{
     const allEvents=await Event.find({});
     res.render("./eventListings/index.ejs",{allEvents})
 }));
 
-// Test route for flash messages (can be removed later)
 router.get("/test-flash", (req, res) => {
     req.flash("success", "This is a success message!");
     req.flash("error", "This is an error message!");
@@ -43,6 +40,7 @@ router.post("/",isLoggedIn,validateEvent,wrapAsync(async (req,res,next)=>{
     req.flash("success", `Event "${title}" has been created successfully!`);
     res.redirect("/events");
 }));
+
 router.get("/:id",wrapAsync(async (req,res)=>{
     let {id}=req.params;
     const event=await Event.findById(id).populate({path:"reviews",populate:{path:"author"}}).populate("owner");
@@ -54,6 +52,7 @@ router.get("/:id",wrapAsync(async (req,res)=>{
     }
 
 }));
+
 router.get("/:id/edit",isLoggedIn,isOwner,wrapAsync(async(req,res)=>{
     let {id}=req.params;
     const event= await Event.findById(id);
@@ -64,12 +63,14 @@ router.get("/:id/edit",isLoggedIn,isOwner,wrapAsync(async(req,res)=>{
         res.render("./eventListings/edit.ejs",{event});
     }
 }));
+
 router.put("/:id",isLoggedIn,isOwner,validateEvent,wrapAsync(async(req,res)=>{
     let {id}=req.params;
     await Event.findByIdAndUpdate(id,{...req.body.event},{new:true});
     req.flash("success", `Event details have been updated successfully!`);
     res.redirect(`/events/${id}`);
 }));
+
 router.delete("/:id",isLoggedIn,isOwner,wrapAsync(async (req,res)=>{
     let {id}=req.params;
     let deletedEvent= await Event.findByIdAndDelete(id);
