@@ -16,6 +16,7 @@ const User=require("./models/user.js");
 const eventRouter=require("./routes/events.js");
 const reviewRouter=require("./routes/reviews.js");
 const userRouter=require("./routes/user.js");
+const bookingRouter=require("./routes/bookings.js");
 
 app.set("view engine","ejs");
 app.use(express.urlencoded({extended:true}));
@@ -74,6 +75,7 @@ app.get("/",async (req,res)=>{
 app.use("/events",eventRouter);
 app.use("/events/:id/reviews",reviewRouter);
 app.use("/",userRouter);
+app.use("/",bookingRouter);
 
 app.get("/test-500", (req, res, next) => {
     next(new ExpressError(500, "This is a test 500 error"));

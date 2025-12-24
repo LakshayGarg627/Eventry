@@ -1,7 +1,6 @@
 <% layout("/Layouts/boilerplate") -%>
 
 <div class="container mb-5" style="margin-top: 1rem;">
-    <!-- Profile Header -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm profile-header-card">
@@ -33,6 +32,11 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab" aria-controls="events" aria-selected="true">
                 <i class="fas fa-calendar-alt me-2"></i>My Events
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="bookings-tab" data-bs-toggle="tab" data-bs-target="#bookings" type="button" role="tab" aria-controls="bookings" aria-selected="false">
+                <i class="fas fa-ticket-alt me-2"></i>My Bookings
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -122,6 +126,91 @@
             <% } %>
         </div>
 
+        <!-- My Bookings Tab -->
+        <div class="tab-pane fade" id="bookings" role="tabpanel" aria-labelledby="bookings-tab">
+            <% if(userBookings.length > 0) { %>
+                <div class="row g-4">
+                    <% for(let booking of userBookings) { %>
+                        <% if(booking.event) { %>
+                            <div class="col-lg-4 col-md-6 col-sm-12">
+                                <div class="event-card booking-card">
+                                    <div class="booking-badge">
+                                        <i class="fas fa-check-circle"></i> Booked
+                                    </div>
+                                    <div class="event-image-wrapper">
+                                        <img src="<%= booking.event.image %>" alt="<%= booking.event.title %>" class="event-image">
+                                        <div class="event-overlay">
+                                            <div class="event-badges">
+                                                <span class="badge event-type-badge"><%= booking.event.eventType %></span>
+                                                <span class="badge event-category-badge"><%= booking.event.eventCategory %></span>
+                                            </div>
+                                            <a href="/events/<%= booking.event._id %>" class="btn-overlay">
+                                                <i class="fas fa-eye"></i>
+                                                View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="event-card-content">
+                                        <h3 class="event-card-title"><%= booking.event.title %></h3>
+                                        
+                                        <div class="event-meta">
+                                            <div class="event-date">
+                                                <i class="fas fa-calendar-alt"></i>
+                                                <span>
+                                                    <% 
+                                                    let date = new Date(booking.event.date); 
+                                                    let options = { 
+                                                        month: 'short', 
+                                                        day: 'numeric', 
+                                                        year: 'numeric' 
+                                                    };
+                                                    %>
+                                                    <%= date.toLocaleDateString('en-US', options) %>
+                                                </span>
+                                            </div>
+                                            
+                                            <div class="event-location">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                                <span><%= booking.event.location %></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="booking-info">
+                                            <div class="booking-detail">
+                                                <i class="fas fa-ticket-alt"></i>
+                                                <span><%= booking.numberOfTickets %> Ticket(s)</span>
+                                            </div>
+                                            <div class="booking-detail">
+                                                <i class="fas fa-clock"></i>
+                                                <span>Booked on <%= new Date(booking.bookingDate).toLocaleDateString('en-US', options) %></span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="event-card-footer">
+                                            <a href="/events/<%= booking.event._id %>" class="btn btn-primary event-btn w-100">
+                                                <i class="fas fa-eye"></i>
+                                                View Event
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% } %>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <div class="text-center py-5">
+                    <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Bookings Yet</h4>
+                    <p class="text-muted">Start booking events to see them here!</p>
+                    <a href="/events" class="btn btn-primary mt-3">
+                        <i class="fas fa-search me-2"></i>Browse Events
+                    </a>
+                </div>
+            <% } %>
+        </div>
+
         <!-- My Reviews Tab -->
         <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
             <% if(reviewsWithEvents.length > 0) { %>
@@ -169,7 +258,7 @@
                     <i class="fas fa-comment-slash fa-4x text-muted mb-3"></i>
                     <h4 class="text-muted">No Reviews Yet</h4>
                     <p class="text-muted">Start reviewing events to see them here!</p>
-                    <a href="/events" class="btn btn-primary mt-3">
+                    <a href="/events" class="btn btn-primary mt-3 btn-color">
                         <i class="fas fa-search me-2"></i>Browse Events
                     </a>
                 </div>
@@ -181,37 +270,46 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const eventsTab = document.getElementById('events-tab');
+    const bookingsTab = document.getElementById('bookings-tab');
     const reviewsTab = document.getElementById('reviews-tab');
     const eventsContent = document.getElementById('events');
+    const bookingsContent = document.getElementById('bookings');
     const reviewsContent = document.getElementById('reviews');
 
-    if (eventsTab && reviewsTab && eventsContent && reviewsContent) {
-        eventsTab.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Update tabs
-            eventsTab.classList.add('active');
-            reviewsTab.classList.remove('active');
-            eventsTab.setAttribute('aria-selected', 'true');
-            reviewsTab.setAttribute('aria-selected', 'false');
-            
-            // Update content
-            eventsContent.classList.add('show', 'active');
-            reviewsContent.classList.remove('show', 'active');
-        });
+    const tabs = [eventsTab, bookingsTab, reviewsTab];
+    const contents = [eventsContent, bookingsContent, reviewsContent];
 
-        reviewsTab.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Update tabs
-            reviewsTab.classList.add('active');
-            eventsTab.classList.remove('active');
-            reviewsTab.setAttribute('aria-selected', 'true');
-            eventsTab.setAttribute('aria-selected', 'false');
-            
-            // Update content
-            reviewsContent.classList.add('show', 'active');
-            eventsContent.classList.remove('show', 'active');
-        });
-    }
+    tabs.forEach((tab, index) => {
+        if (tab) {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active from all tabs
+                tabs.forEach(t => {
+                    if (t) {
+                        t.classList.remove('active');
+                        t.setAttribute('aria-selected', 'false');
+                    }
+                });
+                
+                // Remove active from all content
+                contents.forEach(c => {
+                    if (c) {
+                        c.classList.remove('show', 'active');
+                    }
+                });
+                
+                // Add active to clicked tab
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+                
+                // Add active to corresponding content
+                if (contents[index]) {
+                    contents[index].classList.add('show', 'active');
+                }
+            });
+        }
+    });
 });
 </script>
 
@@ -224,6 +322,7 @@ document.addEventListener('DOMContentLoaded', function() {
         background-color: #7C83FF;
         color: white !important;
     }
+    
 
     .badge-purple-light {
         background-color: #4e5795;
@@ -363,4 +462,67 @@ document.addEventListener('DOMContentLoaded', function() {
         margin: 0;
         white-space: pre-wrap;
         word-wrap: break-word;
+    }
+
+    /* Booking Card Styles */
+    .booking-card {
+        position: relative;
+    }
+
+    .booking-badge {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .booking-badge i {
+        margin-right: 5px;
+    }
+
+    .booking-info {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .booking-detail {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 0.5rem;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+
+    .booking-detail:last-child {
+        margin-bottom: 0;
+    }
+
+    .booking-detail i {
+        color: #667eea;
+        width: 16px;
+    }
+
+    .btn-danger.event-btn {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+
+    .btn-danger.event-btn:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
+
+    .btn-color{
+        background-color: #7C83FF !important;
     }

@@ -253,11 +253,126 @@
                         </button>
                     </form>
                 </div>
+                <% } else if(currUser) { %>
+                <div class="action-buttons">
+                    <button type="button" class="btn btn-book" onclick="initiateBooking('<%= event._id %>', '<%= event.title %>', '<%= event.entryFee %>')">
+                        <i class="fas fa-ticket-alt"></i>
+                        Book Now
+                    </button>
+                </div>
                 <% } %>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Payment Modal -->
+<div id="paymentModal" class="payment-modal">
+    <div class="payment-modal-content">
+        <div class="payment-header">
+            <h3>Complete Payment</h3>
+            <button class="payment-close" onclick="closePaymentModal()">&times;</button>
+        </div>
+        <div class="payment-body">
+            <div class="payment-info">
+                <div class="payment-logo">
+                    <i class="fas fa-ticket-alt"></i>
+                </div>
+                <h4 id="paymentEventTitle"></h4>
+                <div class="payment-amount">
+                    <span class="amount-label">Amount to Pay</span>
+                    <span class="amount-value" id="paymentAmount">₹0</span>
+                </div>
+            </div>
+            <div class="payment-methods">
+                <button class="payment-method-btn active" onclick="selectPaymentMethod('card')">
+                    <i class="fas fa-credit-card"></i>
+                    <span>Card Payment</span>
+                </button>
+                <button class="payment-method-btn" onclick="selectPaymentMethod('upi')">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span>UPI</span>
+                </button>
+                <button class="payment-method-btn" onclick="selectPaymentMethod('netbanking')">
+                    <i class="fas fa-university"></i>
+                    <span>Net Banking</span>
+                </button>
+            </div>
+            <button class="payment-submit-btn" onclick="processPayment()">
+                <i class="fas fa-lock"></i>
+                Pay Securely
+            </button>
+            <p class="payment-note">
+                <i class="fas fa-shield-alt"></i>
+                Test Mode: No actual payment will be charged
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentEventId = null;
+let currentEventTitle = null;
+let currentAmount = 0;
+
+function initiateBooking(eventId, eventTitle, amount) {
+    // Confirmation dialog
+    if (confirm(`Are you sure you want to book "${eventTitle}"?\n\nEntry Fee: ₹${amount}`)) {
+        currentEventId = eventId;
+        currentEventTitle = eventTitle;
+        currentAmount = amount;
+        
+        // Open payment modal
+        document.getElementById('paymentEventTitle').textContent = eventTitle;
+        document.getElementById('paymentAmount').textContent = '₹' + amount.toLocaleString('en-IN');
+        document.getElementById('paymentModal').style.display = 'flex';
+    }
+}
+
+function closePaymentModal() {
+    document.getElementById('paymentModal').style.display = 'none';
+    currentEventId = null;
+    currentEventTitle = null;
+    currentAmount = 0;
+}
+
+function selectPaymentMethod(method) {
+    const buttons = document.querySelectorAll('.payment-method-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.payment-method-btn').classList.add('active');
+}
+
+function processPayment() {
+    const submitBtn = document.querySelector('.payment-submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    
+    // Simulate payment processing
+    setTimeout(() => {
+        // Create form and submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/events/${currentEventId}/book`;
+        
+        const ticketsInput = document.createElement('input');
+        ticketsInput.type = 'hidden';
+        ticketsInput.name = 'tickets';
+        ticketsInput.value = '1';
+        
+        form.appendChild(ticketsInput);
+        document.body.appendChild(form);
+        form.submit();
+    }, 2000); // 2 second delay to simulate payment
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    const modal = document.getElementById('paymentModal');
+    if (event.target == modal) {
+        closePaymentModal();
+    }
+}
+</script>
 
 <style>
 /* Event Owner Badge Styling */
@@ -666,6 +781,220 @@
 .no-reviews p {
     color: #666;
     margin: 0;
+}
+
+/* Book Now Button */
+.btn-book {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    width: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-book:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, #218838 0%, #1fa789 100%);
+}
+
+.btn-book i {
+    margin-right: 8px;
+}
+
+/* Payment Modal */
+.payment-modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.payment-modal-content {
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.payment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.payment-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5rem;
+}
+
+.payment-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.payment-close:hover {
+    color: #333;
+}
+
+.payment-body {
+    padding: 2rem;
+}
+
+.payment-info {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.payment-logo {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+}
+
+.payment-logo i {
+    font-size: 2rem;
+    color: white;
+}
+
+.payment-info h4 {
+    color: #333;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.payment-amount {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.amount-label {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.amount-value {
+    color: #28a745;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.payment-method-btn {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1rem;
+}
+
+.payment-method-btn i {
+    font-size: 1.5rem;
+    color: #667eea;
+}
+
+.payment-method-btn:hover {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.payment-method-btn.active {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.payment-submit-btn {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.payment-submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.payment-submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.payment-note {
+    text-align: center;
+    color: #666;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
+.payment-note i {
+    color: #28a745;
+    margin-right: 5px;
 }
 
 /* Responsive Design */

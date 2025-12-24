@@ -4,6 +4,7 @@ const User=require("../models/user");
 const passport=require("passport");
 const Event=require("../models/events");
 const Review=require("../models/review");
+const Booking=require("../models/booking");
 const wrapAsync=require("../utils/wrapAsync");
 const { saveRedirectUrl, isLoggedIn } = require("../middleware");
 
@@ -50,6 +51,9 @@ router.get("/logout",(req,res,next)=>{
 router.get("/profile", isLoggedIn, wrapAsync(async(req,res)=>{
     const userEvents = await Event.find({ owner: req.user._id }).sort({ date: -1 });
     const userReviews = await Review.find({ author: req.user._id }).sort({ createdAt: -1 }).limit(10);
+    const userBookings = await Booking.find({ user: req.user._id, status: "confirmed" })
+        .populate("event")
+        .sort({ bookingDate: -1 });
     
     // Get event details for reviews
     const reviewsWithEvents = await Promise.all(
@@ -66,8 +70,10 @@ router.get("/profile", isLoggedIn, wrapAsync(async(req,res)=>{
         user: req.user, 
         userEvents, 
         reviewsWithEvents,
+        userBookings,
         totalEvents: userEvents.length,
-        totalReviews: userReviews.length
+        totalReviews: userReviews.length,
+        totalBookings: userBookings.length
     });
 }));
 
